@@ -121,6 +121,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
     setLocationStatus({ isInCampus: false, isLoading: true });
     
     try {
+      // Just check if we can get location - don't restrict to campus
       const validation = await validateCampusLocation();
       
       if (validation.error) {
@@ -141,9 +142,8 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
         distance 
       });
 
-      if (isInCampus) {
-        setShowAR(true);
-      }
+      // Always allow AR navigation - it will navigate to start point first like regular navigation
+      setShowAR(true);
     } catch (error) {
       setLocationStatus({ 
         isInCampus: false, 
@@ -369,11 +369,11 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
                       ) : locationStatus.error ? (
                         <p>{locationStatus.error}</p>
                       ) : locationStatus.distance !== undefined && !locationStatus.isInCampus ? (
-                        <p>User not in campus (Distance: {locationStatus.distance}m)</p>
+                        <p>Will navigate to start point first (Distance: {locationStatus.distance}m)</p>
                       ) : locationStatus.isInCampus ? (
                         <p>Ready for AR Navigation</p>
                       ) : (
-                        <p>Click to check location and start AR</p>
+                        <p>Start AR Navigation with live camera view</p>
                       )}
                     </TooltipContent>
                   </Tooltip>
