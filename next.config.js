@@ -30,10 +30,22 @@ const nextConfig = {
       type: 'javascript/auto',
     });
 
-    // Exclude ONNX files from being processed by webpack's default loaders
+    // Handle ONNX files properly for production deployment
     config.module.rules.push({
       test: /\.onnx$/,
       type: 'asset/resource',
+      generator: {
+        filename: 'static/models/[name][ext]',
+      },
+    });
+
+    // Handle WASM files from ONNX runtime
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'asset/resource',
+      generator: {
+        filename: 'static/wasm/[name][ext]',
+      },
     });
 
     // Fix for onnxruntime-web in client-side builds

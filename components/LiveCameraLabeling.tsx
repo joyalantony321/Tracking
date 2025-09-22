@@ -47,7 +47,33 @@ const LiveCameraLabeling: React.FC<LiveCameraLabelingProps> = ({ onCameraReady }
   const lastInferenceTimeRef = useRef(0);
   const lastPredictionRef = useRef<number[][] | null>(null); // Use ref like index.html's lastPred2d
 
-  // Load ONNX model
+  // Get model path based on environment
+  const getModelPath = useCallback(() => {
+    // Check for custom model path first (useful for Vercel deployments)
+    const customModelPath = process.env.NEXT_PUBLIC_MODEL_PATH;
+    if (customModelPath) {
+      return [customModelPath];
+    }
+    
+    // For static export builds, the path might be different
+    const basePath = process.env.NODE_ENV === 'production' 
+      ? (process.env.NEXT_PUBLIC_BASE_PATH || '') 
+      : '';
+    
+    // Try multiple possible paths for robustness
+    const possiblePaths = [
+      `${basePath}/fastscnn_campus.onnx`,
+      `${basePath}/public/fastscnn_campus.onnx`,
+      '/fastscnn_campus.onnx',
+      './fastscnn_campus.onnx',
+      // Try relative path for static exports
+      'fastscnn_campus.onnx'
+    ];
+    
+    return possiblePaths;
+  }, []);
+
+  // Load ONNX model with retry logic
   const loadModel = useCallback(async () => {
     if (sessionRef.current) return; // Already loaded
     
@@ -55,18 +81,65 @@ const LiveCameraLabeling: React.FC<LiveCameraLabelingProps> = ({ onCameraReady }
     setError(null);
     
     try {
-      // Dynamically import onnxruntime-web
-      const ort = await import('onnxruntime-web');
-      sessionRef.current = await ort.InferenceSession.create('/fastscnn_campus.onnx');
-      setIsModelLoaded(true);
-      console.log("✅ ONNX model loaded successfully");
+      // Dynamically import onnxruntime-web with timeout
+      const ort = await Promise.race([
+        import('onnxruntime-web'),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('ONNX import timeout')), 10000)
+        )
+      ]);
+      
+      // Configure ONNX for web deployment
+      ort.env.wasm.wasmPaths = '/'; // Base path for WASM files
+      
+      const modelPaths = getModelPath();
+      let lastError: Error | null = null;
+      
+      // Try loading model from different paths
+      for (const modelPath of modelPaths) {
+        try {
+          console.log(`🔄 Trying to load model from: ${modelPath}`);
+          
+          // Add timeout for model loading
+          sessionRef.current = await Promise.race([
+            ort.InferenceSession.create(modelPath, {
+              executionProviders: ['wasm'],
+              graphOptimizationLevel: 'basic'
+            }),
+            new Promise<never>((_, reject) => 
+              setTimeout(() => reject(new Error('Model loading timeout')), 15000)
+            )
+          ]);
+          
+          setIsModelLoaded(true);
+          console.log(`✅ ONNX model loaded successfully from: ${modelPath}`);
+          return; // Success, exit function
+          
+        } catch (pathError) {
+          console.warn(`❌ Failed to load from ${modelPath}:`, pathError);
+          lastError = pathError as Error;
+          continue; // Try next path
+        }
+      }
+      
+      // If we reach here, all paths failed
+      throw lastError || new Error('All model paths failed');
+      
     } catch (err) {
       console.error("❌ Error loading ONNX model:", err);
-      setError("Failed to load AI model. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      if (errorMessage.includes('timeout')) {
+        setError("Model loading timed out. Please check your internet connection and try again.");
+      } else if (errorMessage.includes('fetch')) {
+        setError("Could not download AI model. Please check your internet connection.");
+      } else {
+        setError("Failed to load AI model. Please refresh the page and try again.");
+      }
     } finally {
       setIsModelLoading(false);
     }
-  }, []);
+  }, [getModelPath]);
 
   // Start camera stream
   const startCamera = useCallback(async () => {
@@ -311,10 +384,28 @@ const LiveCameraLabeling: React.FC<LiveCameraLabelingProps> = ({ onCameraReady }
           <div className="text-center text-white p-6">
             {error ? (
               <>
-                <div className="text-red-400 mb-4">❌ {error}</div>
-                <Button onClick={loadModel} variant="outline">
-                  Try Again
-                </Button>
+                <div className="text-red-400 text-sm mb-4">❌ {error}</div>
+                <div className="space-y-2">
+                  <Button onClick={loadModel} variant="outline" className="w-full">
+                    🔄 Retry Loading Model
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setError(null);
+                      setIsModelLoaded(false);
+                      setIsModelLoading(false);
+                      loadModel();
+                    }} 
+                    variant="secondary" 
+                    size="sm"
+                    className="w-full"
+                  >
+                    🔧 Force Reload
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-400 mt-3">
+                  If this persists, try refreshing the page or check your internet connection.
+                </div>
               </>
             ) : isModelLoading ? (
               <>
