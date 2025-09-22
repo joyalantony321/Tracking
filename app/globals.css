@@ -130,23 +130,7 @@
   background: #94a3b8;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .w-80 {
-    width: 100vw;
-    position: absolute;
-    z-index: 1000;
-    height: 60vh;
-    top: auto;
-    bottom: 0;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-  
-  .flex.h-\[calc\(100vh-80px\)\] {
-    flex-direction: column;
-  }
-}
+/* Responsive adjustments - REMOVED conflicting mobile styles */
 
 /* Loading animations */
 @keyframes pulse {
@@ -277,18 +261,4 @@
   border: none !important;
 }
 
-/* Mobile responsive adjustments */
-@media (max-width: 768px) {
-  .absolute.top-4.right-4 {
-    top: 1rem;
-    right: 1rem;
-    left: 1rem;
-    max-width: none;
-  }
-  
-  .absolute.bottom-4.left-4 {
-    bottom: 1rem;
-    left: 1rem;
-    right: 1rem;
-  }
-}
+/* Mobile responsive adjustments - Controls remain positioned normally */

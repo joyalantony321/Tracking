@@ -178,7 +178,7 @@ const NavigationPanel: React.FC<NavigationPanelProps> = ({
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="flex flex-col bg-white min-h-0">
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center gap-2 mb-4">

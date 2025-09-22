@@ -102,58 +102,64 @@ export default function CampusNavigation() {
   };
 
   return (
-    <div className="h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Mobile Responsive */}
+      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Campus Navigation System</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Smart pathfinding with real-time GPS navigation
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Campus Navigation</h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                Smart pathfinding with GPS navigation
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${isNavigating ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                <span className="text-sm text-gray-600">
-                  {isNavigating ? 'Live Navigation' : 'Navigation Ready'}
-                </span>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${isNavigating ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+              <span className="text-xs sm:text-sm text-gray-600">
+                {isNavigating ? 'Live Navigation' : 'Navigation Ready'}
+              </span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-80px)]">
-        {/* Navigation Panel */}
-        <div className="w-96 flex-shrink-0 border-r border-gray-200 bg-white overflow-hidden">
-          <NavigationPanel
-            selectedMode={selectedMode}
-            selectedStartPoint={selectedStartPoint}
-            selectedDestination={selectedDestination}
-            routeInfo={routeInfo}
-            isNavigating={isNavigating}
-            onModeChange={handleModeChange}
-            onStartPointSelect={handleStartPointSelect}
-            onDestinationSelect={handleDestinationSelect}
-            onStartNavigation={handleStartNavigation}
-            onStopNavigation={handleStopNavigation}
-            onClearRoute={handleClearRoute}
-          />
-        </div>
+      {/* Main Content - Mobile First Design */}
+      <div className="p-4 max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Navigation Panel - Full width on mobile, sidebar on desktop */}
+          <div className="w-full lg:w-96 lg:flex-shrink-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <NavigationPanel
+                selectedMode={selectedMode}
+                selectedStartPoint={selectedStartPoint}
+                selectedDestination={selectedDestination}
+                routeInfo={routeInfo}
+                isNavigating={isNavigating}
+                onModeChange={handleModeChange}
+                onStartPointSelect={handleStartPointSelect}
+                onDestinationSelect={handleDestinationSelect}
+                onStartNavigation={handleStartNavigation}
+                onStopNavigation={handleStopNavigation}
+                onClearRoute={handleClearRoute}
+              />
+            </div>
+          </div>
 
-        {/* Map Container */}
-        <div className="flex-1 relative">
-          <MapComponent
-            selectedMode={selectedMode}
-            selectedStartPoint={selectedStartPoint}
-            selectedDestination={selectedDestination}
-            routeInfo={routeInfo}
-            isNavigating={isNavigating}
-            onRouteCalculated={handleRouteCalculated}
-          />
+          {/* Map Container - Card Element for Mobile */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="h-64 sm:h-80 md:h-96 lg:h-[calc(100vh-200px)] relative">
+                <MapComponent
+                  selectedMode={selectedMode}
+                  selectedStartPoint={selectedStartPoint}
+                  selectedDestination={selectedDestination}
+                  routeInfo={routeInfo}
+                  isNavigating={isNavigating}
+                  onRouteCalculated={handleRouteCalculated}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
