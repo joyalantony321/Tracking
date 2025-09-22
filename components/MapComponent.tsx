@@ -51,13 +51,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log('Initializing map...');
 
-    // Create map centered on campus
-    const map = L.map(mapContainerRef.current).setView([12.862, 77.438], 17);
+    // Create map centered on campus with full interactive controls
+    const map = L.map(mapContainerRef.current, {
+      zoomControl: true, // Enable zoom controls for user interaction
+      attributionControl: false,
+      dragging: true, // Enable map dragging/panning
+      scrollWheelZoom: true, // Enable mouse wheel zoom
+      doubleClickZoom: true, // Enable double-click zoom
+      touchZoom: true, // Enable touch zoom for mobile
+      boxZoom: true, // Enable box zoom selection
+      keyboard: true, // Enable keyboard navigation
+      zoomSnap: 0.1, // Smooth zoom increments
+      zoomDelta: 0.5, // Zoom step size
+      wheelPxPerZoomLevel: 60 // Smooth mouse wheel zoom
+    }).setView([12.862, 77.438], 17);
     
     // Add tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
+      maxZoom: 21 // Allow closer zoom for detailed view
     }).addTo(map);
 
     // Build graph from GeoJSON

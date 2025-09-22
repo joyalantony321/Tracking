@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fast-SCNN ONNX Navigation</title>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+  <style>
+    canvas { border: 1px solid black; }
+    button { margin: 5px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Fast-SCNN ONNX Navigation</h2>
+  <button id="startBtn">Start Camera</button>
+  <button id="switchBtn" style="display:none;">Switch Camera</button>
+  <video id="webcam" width="640" height="480" autoplay muted style="display:none;"></video>
+  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <script>
+const classes = [
+  "background",
+  "Block 2",
+  "Block 3",
+  "Open Audi",
+  "Open Audi Stage",
+  "Road",
+  "Students Square"
+];
+
+// Define different colors for each class
+const classColors = [
+  "#000000", // background - black (won't be displayed)
+  "#FF6B6B", // Block 2 - red
+  "#4ECDC4", // Block 3 - teal
+  "#45B7D1", // Open Audi - blue
+  "#96CEB4", // Open Audi Stage - mint green
+  "#FFEAA7", // Road - yellow
+  "#DDA0DD"  // Students Square - plum
+];
+
+let session;
+let currentStream;
+let useBackCamera = false; // false = front camera, true = back camera
+const inferenceRate = 500; // run model every 500ms → 2 FPS
+let lastInferenceTime = 0;
+let lastPred2d = null; // store last prediction to keep text stable
+
+async function loadModel() {
+  session = await ort.InferenceSession.create('fastscnn_campus.onnx');
+  console.log("✅ ONNX model loaded");
+}
+
+async function startCamera() {
+  await loadModel();
+
+  const video = document.getElementById('webcam');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  async function getStream() {
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => track.stop());
+    }
+    currentStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: useBackCamera ? 'environment' : 'user', width: 640, height: 480 },
+      audio: false
+    });
+    video.srcObject = currentStream;
+    await new Promise(resolve => { video.onloadedmetadata = () => resolve(); });
+    await video.play();
+    video.style.display = 'block';
+    document.getElementById('switchBtn').style.display = 'inline-block';
+  }
+
+  await getStream();
+
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  async function render() {
+    ctx.drawImage(video, 0, 0, width, height);
+    let frame = ctx.getImageData(0, 0, width, height);
+    let data = frame.data;
+
+    const now = Date.now();
+    if (now - lastInferenceTime > inferenceRate) {
+      lastInferenceTime = now;
+
+      // Preprocess: HWC -> CHW, normalize
+      let input = new Float32Array(3 * 256 * 256);
+      const scaleX = width / 256;
+      const scaleY = height / 256;
+
+      for (let y = 0; y < 256; y++) {
+        for (let x = 0; x < 256; x++) {
+          const srcX = Math.floor(x * scaleX);
+          const srcY = Math.floor(y * scaleY);
+          const idxSrc = (srcY * width + srcX) * 4;
+          const idxDst = y * 256 + x;
+          input[idxDst] = data[idxSrc] / 255.0;
+          input[idxDst + 256*256] = data[idxSrc + 1] / 255.0;
+          input[idxDst + 2*256*256] = data[idxSrc + 2] / 255.0;
+        }
+      }
+
+      const tensor = new ort.Tensor('float32', input, [1, 3, 256, 256]);
+      const output = await session.run({ input: tensor });
+      let pred = output.output.data;
+
+      // Reshape pred to [num_classes, H, W]
+      const H = 256, W = 256, C = classes.length;
+      let pred2d = Array.from({ length: H }, () => new Array(W).fill(0));
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          let maxVal = -Infinity, maxClass = 0;
+          for (let c = 0; c < C; c++) {
+            const v = pred[c*H*W + y*W + x];
+            if (v > maxVal) { maxVal = v; maxClass = c; }
+          }
+          pred2d[y][x] = maxClass;
+        }
+      }
+
+      lastPred2d = pred2d; // store last prediction
+    }
+
+    // Draw class names at largest area centers using lastPred2d
+    if (lastPred2d) {
+      const H = 256, W = 256, C = classes.length;
+      const scaleX = width / 256;
+      const scaleY = height / 256;
+
+      for (let c = 1; c < C; c++) {
+        let points = [];
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            if (lastPred2d[y][x] === c) points.push([x, y]);
+          }
+        }
+        if (points.length === 0) continue;
+
+        let sumX = 0, sumY = 0;
+        for (let p of points) { sumX += p[0]; sumY += p[1]; }
+        let cx = Math.floor(sumX / points.length * scaleX);
+        let cy = Math.floor(sumY / points.length * scaleY);
+
+        // Use different color for each class
+        ctx.fillStyle = classColors[c];
+        ctx.font = 'bold 20px Arial';
+        ctx.strokeStyle = '#000000'; // black outline for better visibility
+        ctx.lineWidth = 2;
+        
+        // Draw text with outline for better visibility
+        ctx.strokeText(classes[c], cx - 20, cy);
+        ctx.fillText(classes[c], cx - 20, cy);
+      }
+    }
+
+    requestAnimationFrame(render);
+  }
+
+  render();
+
+  // Switch camera button
+  document.getElementById('switchBtn').onclick = async () => {
+    useBackCamera = !useBackCamera;
+    await getStream();
+  };
+}
+
+document.getElementById('startBtn').onclick = () => {
+  startCamera();
+  document.getElementById('startBtn').style.display = 'none';
+};
+</script>
+</body>
+</html>
