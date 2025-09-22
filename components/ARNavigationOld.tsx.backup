@@ -12,6 +12,7 @@ import {
   type ARNavigationPoint,
   type ARArrowPosition,
 } from '@/lib/ar-navigation';
+import { validateCampusLocation } from '@/lib/campus-boundaries';
 
 interface ARNavigationProps {
   routeInfo: any;

@@ -6,13 +6,55 @@ const nextConfig = {
   },
   images: { unoptimized: true },
   
+  // Transpile ONNX runtime modules
+  transpilePackages: ['onnxruntime-web'],
+  
+  // Experimental features for better module handling
+  experimental: {
+    esmExternals: 'loose',
+  },
+  
   // Browser extension compatibility handled in layout
   
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // Handle GeoJSON files
     config.module.rules.push({
       test: /\.geojson$/,
       use: 'json-loader'
     });
+
+    // Handle ONNX.js modules properly
+    config.module.rules.push({
+      test: /\.mjs$/,
+      include: /node_modules/,
+      type: 'javascript/auto',
+    });
+
+    // Exclude ONNX files from being processed by webpack's default loaders
+    config.module.rules.push({
+      test: /\.onnx$/,
+      type: 'asset/resource',
+    });
+
+    // Fix for onnxruntime-web in client-side builds
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+
+    // Prevent Terser from processing certain ONNX files
+    if (config.optimization && config.optimization.minimizer) {
+      config.optimization.minimizer.forEach((minimizer) => {
+        if (minimizer.constructor.name === 'TerserPlugin') {
+          minimizer.options.exclude = /ort\..*\.mjs$/;
+        }
+      });
+    }
+
     return config;
   },
   
