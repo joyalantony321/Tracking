@@ -61,9 +61,9 @@ export default function TestPage() {
   }, []);
 
   const handleStartNavigation = () => {
-    setIsNavigating(true);
-    // In a real app, you would start GPS tracking here
-    console.log('Starting navigation...');
+    // Redirect to the external navigation app
+    console.log('Redirecting to external navigation app...');
+    window.open('https://test-c-track.vercel.app/', '_blank');
   };
 
   const handleStopNavigation = () => {

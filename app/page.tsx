@@ -47,45 +47,9 @@ export default function CampusNavigation() {
   };
 
   const handleStartNavigation = () => {
-    // Request location permission first
-    if (!navigator.geolocation) {
-      alert('GPS location is not supported by this browser. Please use a modern browser with location services.');
-      return;
-    }
-    
-    // Request permission and start navigation
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        // Permission granted, start navigation
-        setIsNavigating(true);
-        console.log('Live navigation started');
-        alert('🧭 Live navigation started! Make sure to keep your device\'s location services enabled.');
-      },
-      (error) => {
-        // Permission denied or error
-        let errorMessage = 'Unable to access your location. ';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage += 'Please enable location permissions for this website in your browser settings.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable. Please check your GPS settings.';
-            break;
-          case error.TIMEOUT:
-            errorMessage += 'Location request timed out. Please try again.';
-            break;
-          default:
-            errorMessage += 'An unknown error occurred while retrieving your location.';
-            break;
-        }
-        alert(errorMessage);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
-      }
-    );
+    // Redirect to the external navigation app
+    console.log('Redirecting to external navigation app...');
+    window.open('https://test-c-track.vercel.app/', '_blank');
   };
 
   const handleStopNavigation = () => {
