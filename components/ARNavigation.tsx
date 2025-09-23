@@ -91,18 +91,18 @@ const ARNavigation: React.FC<ARNavigationProps> = ({
         <>
           {/* Split view container */}
           <div className="flex flex-col h-full pt-20">
-            {/* Top half - Live camera with labeling */}
-            <div className="flex-1 relative">
+            {/* Top half - Video playback */}
+            <div className="flex-1 relative min-h-0 bg-black">
               <LiveCameraLabeling onCameraReady={handleCameraReady} />
               
-              {/* Camera status overlay */}
-              <div className="absolute bottom-4 left-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm">
-                📷 Live Camera Labeling
+              {/* Video status overlay */}
+              <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm backdrop-blur-sm z-10">
+                🎥 Track Video
               </div>
             </div>
 
             {/* Bottom half - Static path map */}
-            <div className="flex-1 relative border-t-2 border-white/20">
+            <div className="flex-1 relative min-h-0 border-t-4 border-blue-500/30">
               <StaticPathMap
                 routeInfo={routeInfo}
                 selectedMode={selectedMode}
@@ -110,8 +110,8 @@ const ARNavigation: React.FC<ARNavigationProps> = ({
               />
               
               {/* Map status overlay */}
-              <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-2 rounded-lg text-sm">
-                🗺️ Route Map
+              <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-2 rounded-lg text-sm backdrop-blur-sm z-10">
+                🗺️ Shortest Path
               </div>
             </div>
           </div>
